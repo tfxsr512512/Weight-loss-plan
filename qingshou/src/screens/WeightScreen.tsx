@@ -101,6 +101,23 @@ export default function WeightScreen() {
 
   const bmiStatus = getBMIStatus();
 
+  // F204 预计达标时间
+  const calculateExpectedDate = () => {
+    if (!goal || records.length < 2) return { days: 0, date: '' };
+    const weeklyGoal = goal.weeklyGoal || 0.5;
+    const remainingWeight = currentWeight - targetWeight;
+    if (remainingWeight <= 0 || weeklyGoal <= 0) return { days: 0, date: '已达成' };
+    
+    const totalDays = Math.ceil((remainingWeight / weeklyGoal) * 7);
+    const expectedDate = new Date();
+    expectedDate.setDate(expectedDate.getDate() + totalDays);
+    const dateStr = `${expectedDate.getFullYear()}-${String(expectedDate.getMonth() + 1).padStart(2, '0')}-${String(expectedDate.getDate()).padStart(2, '0')}`;
+    
+    return { days: totalDays, date: dateStr };
+  };
+
+  const expectedGoal = calculateExpectedDate();
+
   return (
     <View style={[styles.container, { backgroundColor: colors.backgroundSecondary }]}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -175,6 +192,27 @@ export default function WeightScreen() {
           <Text style={[styles.weightGoalTip, { color: colors.textSecondary }]}>
             已减重 {(initialWeight - currentWeight).toFixed(1)} kg，还需 {(Math.max(0, currentWeight - targetWeight)).toFixed(1)} kg
           </Text>
+          {expectedGoal.date && expectedGoal.date !== '已达成' && (
+            <View style={[styles.expectedRow, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.expectedIcon]}>📅</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.expectedText, { color: colors.text }]}>
+                  预计 <Text style={{ color: colors.primary, fontWeight: fontWeights.bold }}>{expectedGoal.days}</Text> 天后达成目标
+                </Text>
+                <Text style={[styles.expectedDate, { color: colors.textTertiary }]}>
+                  预计日期：{expectedGoal.date}
+                </Text>
+              </View>
+            </View>
+          )}
+          {expectedGoal.date === '已达成' && (
+            <View style={[styles.expectedRow, { backgroundColor: colors.success + '15' }]}>
+              <Text style={[styles.expectedIcon]}>🎉</Text>
+              <Text style={[styles.expectedText, { color: colors.success }]}>
+                恭喜你已达成目标！
+              </Text>
+            </View>
+          )}
         </Card>
 
         <Card>
@@ -387,6 +425,25 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.md,
     fontSize: fontSize.sm,
+  },
+  expectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  expectedIcon: {
+    fontSize: 24,
+    marginRight: spacing.sm,
+  },
+  expectedText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeights.medium,
+  },
+  expectedDate: {
+    fontSize: fontSize.xs,
+    marginTop: 2,
   },
   rangeButtons: {
     flexDirection: 'row',

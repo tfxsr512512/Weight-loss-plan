@@ -5,6 +5,7 @@ import { AppDataProvider } from './src/hooks/useAppData';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { initDB } from './src/db';
 import { useTheme } from './src/theme/ThemeContext';
+import { I18nProvider } from './src/i18n';
 
 function AppContent() {
   const [dbReady, setDbReady] = useState(false);
@@ -32,9 +33,11 @@ function AppContent() {
   }
 
   return (
-    <AppDataProvider>
-      <AppNavigator />
-    </AppDataProvider>
+    <I18nProvider>
+      <AppDataProvider>
+        <AppNavigator />
+      </AppDataProvider>
+    </I18nProvider>
   );
 }
 

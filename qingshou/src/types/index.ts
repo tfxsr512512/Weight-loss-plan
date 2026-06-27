@@ -121,3 +121,52 @@ export interface DailyNutrition {
   carbs: number;
   fat: number;
 }
+
+// F201 喝水记录
+export interface WaterRecord {
+  id: string;
+  date: string;
+  amount: number;
+  createdAt: number;
+}
+
+// F202 运动记录
+export interface ExerciseRecord {
+  id: string;
+  date: string;
+  name: string;
+  type: ExerciseType;
+  duration: number;
+  calories: number;
+  createdAt: number;
+}
+
+export type ExerciseType = 'walking' | 'running' | 'cycling' | 'swimming' | 'yoga' | 'other';
+
+// F205 成就系统
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  unlockedAt?: number;
+  type: 'streak' | 'weight' | 'fasting' | 'meal' | 'water';
+  target: number;
+  progress: number;
+}
+
+// F203 生理期记录
+export interface PeriodRecord {
+  id: string;
+  date: string;
+  type: 'start' | 'end';
+  note?: string;
+  createdAt: number;
+}
+
+export interface PeriodCycle {
+  startDate: string;
+  endDate: string | null;
+  duration: number | null;
+}

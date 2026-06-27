@@ -16,6 +16,11 @@ import FoodDetailScreen from '../screens/FoodDetailScreen';
 import FoodCategoryScreen from '../screens/FoodCategoryScreen';
 import CheckInCalendarScreen from '../screens/CheckInCalendarScreen';
 import RecipeScreen from '../screens/RecipeScreen';
+import WaterScreen from '../screens/WaterScreen';
+import ExerciseScreen from '../screens/ExerciseScreen';
+import AchievementScreen from '../screens/AchievementScreen';
+import CustomFoodScreen from '../screens/CustomFoodScreen';
+import PeriodScreen from '../screens/PeriodScreen';
 
 export type RootTabParamList = {
   Home: undefined;
@@ -31,6 +36,11 @@ export type RootStackParamList = {
   FoodCategory: { category: string; categoryName: string };
   CheckInCalendar: undefined;
   Recipe: undefined;
+  Water: undefined;
+  Exercise: undefined;
+  Achievement: undefined;
+  CustomFood: undefined;
+  Period: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -118,6 +128,31 @@ export const AppNavigator = () => {
           name="Recipe" 
           component={RecipeScreen} 
           options={{ headerShown: true, title: '轻断食食谱' }}
+        />
+        <Stack.Screen 
+          name="Water" 
+          component={WaterScreen} 
+          options={{ headerShown: true, title: '喝水记录' }}
+        />
+        <Stack.Screen 
+          name="Exercise" 
+          component={ExerciseScreen} 
+          options={{ headerShown: true, title: '运动记录' }}
+        />
+        <Stack.Screen 
+          name="Achievement" 
+          component={AchievementScreen} 
+          options={{ headerShown: true, title: '成就墙' }}
+        />
+        <Stack.Screen 
+          name="CustomFood" 
+          component={CustomFoodScreen} 
+          options={{ headerShown: true, title: '自定义食物' }}
+        />
+        <Stack.Screen 
+          name="Period" 
+          component={PeriodScreen} 
+          options={{ headerShown: true, title: '生理期记录' }}
         />
       </Stack.Navigator>
       <StatusBar style="auto" />

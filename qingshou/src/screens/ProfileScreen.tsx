@@ -8,10 +8,13 @@ import { Button } from '../components/Button';
 import { updateUserProfile, updateGoals, updateAppSettings, getStreak, getWeightRecords, getMealRecords, getCheckInRecords } from '../db';
 import { ThemeType, WeightUnit, HeightUnit, WeightRecord, MealRecord } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
+import { useI18n } from '../i18n';
+import { Language } from '../i18n/translations';
 
 export default function ProfileScreen({ navigation }: any) {
   const { colors, theme, setTheme, isDark } = useTheme();
   const { userProfile, goal, settings, refreshAll, latestWeight } = useAppData();
+  const { language, setLanguage, t } = useI18n();
   const [streak, setStreak] = useState(0);
   const [totalRecords, setTotalRecords] = useState(0);
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -28,6 +31,16 @@ export default function ProfileScreen({ navigation }: any) {
     age: '',
     gender: 'unknown',
   });
+
+  const languageOptions: { key: Language; label: string }[] = [
+    { key: 'zh-CN', label: t.settings.chinese },
+    { key: 'en-US', label: t.settings.english },
+  ];
+
+  const handleLanguageChange = async (lang: Language) => {
+    await setLanguage(lang);
+    await refreshAll();
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -224,6 +237,61 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
           <Text style={{ color: colors.textTertiary }}>›</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('Water')}
+        >
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}>💧</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>喝水记录</Text>
+          </View>
+          <Text style={{ color: colors.textTertiary }}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('Exercise')}
+        >
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}>🏃</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>运动记录</Text>
+          </View>
+          <Text style={{ color: colors.textTertiary }}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('Achievement')}
+        >
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}>🏆</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>成就墙</Text>
+          </View>
+          <Text style={{ color: colors.textTertiary }}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('CustomFood')}
+        >
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}>🍽️</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>自定义食物</Text>
+          </View>
+          <Text style={{ color: colors.textTertiary }}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('Period')}
+        >
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}>🩸</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>生理期记录</Text>
+          </View>
+          <Text style={{ color: colors.textTertiary }}>›</Text>
+        </TouchableOpacity>
       </Card>
 
       <Card>
@@ -274,6 +342,34 @@ export default function ProfileScreen({ navigation }: any) {
                 <Text
                   style={{
                     color: settings?.weightUnit === opt.key ? 'white' : colors.text,
+                    fontSize: fontSize.xs,
+                  }}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <View style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}>
+          <View style={styles.menuLeft}>
+            <Text style={styles.menuIcon}>🌐</Text>
+            <Text style={[styles.menuText, { color: colors.text }]}>{t.settings.language}</Text>
+          </View>
+          <View style={styles.unitOptions}>
+            {languageOptions.map(opt => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[
+                  styles.unitBtn,
+                  { backgroundColor: language === opt.key ? colors.primary : colors.backgroundSecondary },
+                ]}
+                onPress={() => handleLanguageChange(opt.key)}
+              >
+                <Text
+                  style={{
+                    color: language === opt.key ? 'white' : colors.text,
                     fontSize: fontSize.xs,
                   }}
                 >
