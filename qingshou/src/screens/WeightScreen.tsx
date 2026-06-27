@@ -15,7 +15,7 @@ import { Dimensions } from 'react-native';
 
 export default function WeightScreen() {
   const { colors } = useTheme();
-  const { goal, latestWeight, refreshWeight } = useAppData();
+  const { goal, latestWeight, userProfile, settings, refreshWeight } = useAppData();
   const [records, setRecords] = useState<WeightRecord[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [weightInput, setWeightInput] = useState('');
@@ -63,14 +63,15 @@ export default function WeightScreen() {
   const currentWeight = latestWeight || goal?.currentWeight || 0;
   const targetWeight = goal?.targetWeight || 0;
   const initialWeight = goal?.initialWeight || 0;
+  const heightInMeters = (userProfile?.height || 170) / 100;
   const weightProgress = initialWeight !== targetWeight
     ? Math.max(0, (initialWeight - currentWeight) / (initialWeight - targetWeight))
     : 0;
 
+  // BMI 计算 - 使用实际身高
   const calculateBMI = () => {
-    if (!currentWeight) return '--';
-    const height = 1.7;
-    return (currentWeight / (height * height)).toFixed(1);
+    if (!currentWeight || !heightInMeters) return '--';
+    return (currentWeight / (heightInMeters * heightInMeters)).toFixed(1);
   };
 
   const getBMIStatus = () => {
@@ -119,10 +120,40 @@ export default function WeightScreen() {
           </View>
 
           {records.length >= 2 && (
-            <Text style={[styles.weightChange, { color: (records[0]?.weight || 0) - (records[1]?.weight || 0) < 0 ? colors.success : colors.danger }]}>
-              较上次 {(Math.abs((records[0]?.weight || 0) - (records[1]?.weight || 0))).toFixed(1)} kg
-              {(records[0]?.weight || 0) - (records[1]?.weight || 0) < 0 ? ' ↓' : ' ↑'}
-            </Text>
+            <View style={styles.changeRow}>
+              <View style={styles.changeItem}>
+                <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>较上次</Text>
+                <Text style={[
+                  styles.changeValue,
+                  { color: (records[0]?.weight || 0) - (records[1]?.weight || 0) < 0 ? colors.success : colors.danger }
+                ]}>
+                  {(records[0]?.weight || 0) - (records[1]?.weight || 0) < 0 ? '-' : '+'}
+                  {Math.abs((records[0]?.weight || 0) - (records[1]?.weight || 0)).toFixed(1)} kg
+                </Text>
+              </View>
+              <View style={styles.changeItem}>
+                <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>较初始</Text>
+                <Text style={[
+                  styles.changeValue,
+                  { color: initialWeight - currentWeight > 0 ? colors.success : colors.danger }
+                ]}>
+                  {initialWeight - currentWeight >= 0 ? '-' : '+'}
+                  {Math.abs(initialWeight - currentWeight).toFixed(1)} kg
+                </Text>
+              </View>
+              {settings?.weightUnit === 'jin' && (
+                <View style={styles.changeItem}>
+                  <Text style={[styles.changeLabel, { color: colors.textSecondary }]}>斤</Text>
+                  <Text style={[
+                    styles.changeValue,
+                    { color: initialWeight - currentWeight > 0 ? colors.success : colors.danger }
+                  ]}>
+                    {initialWeight - currentWeight >= 0 ? '-' : '+'}
+                    {(Math.abs(initialWeight - currentWeight) * 2).toFixed(1)} 斤
+                  </Text>
+                </View>
+              )}
+            </View>
           )}
         </Card>
 
@@ -319,6 +350,23 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: fontSize.sm,
     fontWeight: fontWeights.medium,
+  },
+  changeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  changeItem: {
+    alignItems: 'center',
+  },
+  changeLabel: {
+    fontSize: fontSize.xs,
+  },
+  changeValue: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeights.bold,
+    marginTop: 2,
   },
   weightGoalRow: {
     flexDirection: 'row',

@@ -14,6 +14,8 @@ import WeightScreen from '../screens/WeightScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import FoodDetailScreen from '../screens/FoodDetailScreen';
 import FoodCategoryScreen from '../screens/FoodCategoryScreen';
+import CheckInCalendarScreen from '../screens/CheckInCalendarScreen';
+import RecipeScreen from '../screens/RecipeScreen';
 
 export type RootTabParamList = {
   Home: undefined;
@@ -27,6 +29,8 @@ export type RootStackParamList = {
   Main: undefined;
   FoodDetail: { foodId: string };
   FoodCategory: { category: string; categoryName: string };
+  CheckInCalendar: undefined;
+  Recipe: undefined;
 };
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -104,6 +108,16 @@ export const AppNavigator = () => {
           name="FoodCategory" 
           component={FoodCategoryScreen} 
           options={{ headerShown: true, title: '食物分类' }}
+        />
+        <Stack.Screen 
+          name="CheckInCalendar" 
+          component={CheckInCalendarScreen} 
+          options={{ headerShown: true, title: '打卡日历' }}
+        />
+        <Stack.Screen 
+          name="Recipe" 
+          component={RecipeScreen} 
+          options={{ headerShown: true, title: '轻断食食谱' }}
         />
       </Stack.Navigator>
       <StatusBar style="auto" />

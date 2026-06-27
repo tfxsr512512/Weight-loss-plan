@@ -5,7 +5,7 @@ import { useAppData } from '../hooks/useAppData';
 import { spacing, fontSize, fontWeights, borderRadius } from '../theme';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { searchFoods, getFoodsByCategory, getFavoriteFoods, addMealRecord } from '../db';
+import { searchFoods, getFoodsByCategory, getFavoriteFoods, addMealRecord, toggleFavoriteFood } from '../db';
 import { Food, MealType } from '../types';
 import { foodCategoryNames, mealTypeNames } from '../data/foods';
 import { getTodayDateString } from '../utils/date';
@@ -37,6 +37,32 @@ export default function FoodScreen({ navigation }: any) {
   const [showFoodModal, setShowFoodModal] = useState(false);
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [quantity, setQuantity] = useState('100');
+  const [portionUnit, setPortionUnit] = useState<'g' | '份' | '碗' | '个'>('g');
+
+  // 份量换算：每份/碗/个对应的克数
+  const portionGrams: Record<string, number> = {
+    '份': 100,
+    '碗': 200,
+    '个': 50,
+  };
+
+  const getActualGrams = () => {
+    if (portionUnit === 'g') return parseFloat(quantity) || 0;
+    const baseGrams = portionGrams[portionUnit] || 100;
+    return (parseFloat(quantity) || 1) * baseGrams;
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!selectedFood) return;
+    await toggleFavoriteFood(selectedFood.id, !selectedFood.isFavorite);
+    const updatedFoods = await searchFoods(searchText);
+    setSearchResults(updatedFoods);
+    const favs = await getFavoriteFoods();
+    setFavorites(favs);
+    // 更新selectedFood的状态
+    const updated = updatedFoods.find(f => f.id === selectedFood.id);
+    if (updated) setSelectedFood(updated);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -69,12 +95,13 @@ export default function FoodScreen({ navigation }: any) {
   const handleFoodPress = (food: Food) => {
     setSelectedFood(food);
     setQuantity(food.servingSize.toString());
+    setPortionUnit('g');
     setShowFoodModal(true);
   };
 
   const handleAddMeal = async () => {
     if (!selectedFood) return;
-    const qty = parseFloat(quantity) || 0;
+    const qty = getActualGrams();
     if (qty <= 0) {
       Alert.alert('提示', '请输入正确的份量');
       return;
@@ -229,46 +256,78 @@ export default function FoodScreen({ navigation }: any) {
       {showFoodModal && selectedFood && (
         <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
           <View style={[styles.modalContent, { backgroundColor: colors.backgroundCard }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedFood.name}</Text>
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{selectedFood.name}</Text>
+              <TouchableOpacity onPress={handleToggleFavorite}>
+                <Text style={{ fontSize: 24 }}>{selectedFood.isFavorite ? '⭐' : '☆'}</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
               {selectedFood.calories} kcal/100g
             </Text>
-            
+
             <View style={{ marginTop: spacing.lg }}>
-              <Text style={[styles.label, { color: colors.text }]}>份量（克）</Text>
-              <View style={[styles.quantityInput, { backgroundColor: colors.backgroundInput }]}>
+              <Text style={[styles.label, { color: colors.text }]}>份量单位</Text>
+              <View style={styles.unitRow}>
+                {(['g', '份', '碗', '个'] as const).map(unit => (
+                  <TouchableOpacity
+                    key={unit}
+                    style={[
+                      styles.unitBtn,
+                      { backgroundColor: portionUnit === unit ? colors.primary : colors.backgroundSecondary },
+                    ]}
+                    onPress={() => {
+                      setPortionUnit(unit);
+                      if (unit === 'g') setQuantity(selectedFood.servingSize.toString());
+                      else setQuantity('1');
+                    }}
+                  >
+                    <Text style={{ color: portionUnit === unit ? 'white' : colors.text, fontSize: fontSize.sm }}>
+                      {unit}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={[styles.quantityInput, { backgroundColor: colors.backgroundInput, marginTop: spacing.sm }]}>
                 <TextInput
                   style={[styles.quantityText, { color: colors.text }]}
                   keyboardType="numeric"
                   value={quantity}
                   onChangeText={setQuantity}
                 />
-                <Text style={{ color: colors.textSecondary }}>g</Text>
+                <Text style={{ color: colors.textSecondary }}>
+                  {portionUnit === 'g' ? 'g' : portionUnit}
+                </Text>
               </View>
+              {portionUnit !== 'g' && (
+                <Text style={[styles.portionTip, { color: colors.textTertiary }]}>
+                  ≈ {getActualGrams()}g
+                </Text>
+              )}
             </View>
 
             <View style={styles.nutritionRow}>
               <View style={styles.nutritionItem}>
                 <Text style={[styles.nutritionValue, { color: colors.primary }]}>
-                  {((parseFloat(quantity) || 0) / 100 * selectedFood.calories).toFixed(0)}
+                  {(getActualGrams() / 100 * selectedFood.calories).toFixed(0)}
                 </Text>
                 <Text style={[styles.nutritionLabel, { color: colors.textSecondary }]}>热量(kcal)</Text>
               </View>
               <View style={styles.nutritionItem}>
                 <Text style={[styles.nutritionValue, { color: colors.text }]}>
-                  {((parseFloat(quantity) || 0) / 100 * selectedFood.protein).toFixed(1)}g
+                  {(getActualGrams() / 100 * selectedFood.protein).toFixed(1)}g
                 </Text>
                 <Text style={[styles.nutritionLabel, { color: colors.textSecondary }]}>蛋白</Text>
               </View>
               <View style={styles.nutritionItem}>
                 <Text style={[styles.nutritionValue, { color: colors.text }]}>
-                  {((parseFloat(quantity) || 0) / 100 * selectedFood.carbs).toFixed(1)}g
+                  {(getActualGrams() / 100 * selectedFood.carbs).toFixed(1)}g
                 </Text>
                 <Text style={[styles.nutritionLabel, { color: colors.textSecondary }]}>碳水</Text>
               </View>
               <View style={styles.nutritionItem}>
                 <Text style={[styles.nutritionValue, { color: colors.text }]}>
-                  {((parseFloat(quantity) || 0) / 100 * selectedFood.fat).toFixed(1)}g
+                  {(getActualGrams() / 100 * selectedFood.fat).toFixed(1)}g
                 </Text>
                 <Text style={[styles.nutritionLabel, { color: colors.textSecondary }]}>脂肪</Text>
               </View>
@@ -430,10 +489,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.xl,
   },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   modalTitle: {
     fontSize: fontSize.xl,
     fontWeight: fontWeights.bold,
-    textAlign: 'center',
   },
   modalSubtitle: {
     fontSize: fontSize.sm,
@@ -444,6 +507,16 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     marginBottom: spacing.sm,
     fontWeight: fontWeights.medium,
+  },
+  unitRow: {
+    flexDirection: 'row',
+    marginHorizontal: -spacing.xs,
+  },
+  unitBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.round,
+    marginHorizontal: spacing.xs,
   },
   quantityInput: {
     flexDirection: 'row',
@@ -456,6 +529,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.lg,
     fontWeight: fontWeights.bold,
+  },
+  portionTip: {
+    fontSize: fontSize.xs,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   nutritionRow: {
     flexDirection: 'row',

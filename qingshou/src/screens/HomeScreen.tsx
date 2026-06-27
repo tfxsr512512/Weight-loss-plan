@@ -6,11 +6,12 @@ import { spacing, fontSize, fontWeights, borderRadius } from '../theme';
 import { Card, CardTitle } from '../components/Card';
 import { Button } from '../components/Button';
 import { ProgressBar } from '../components/ProgressBar';
+import { NutritionPieChart } from '../components/NutritionPieChart';
 import { formatTime, formatDurationHMS, getTodayDateString } from '../utils/date';
 
 export default function HomeScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const { goal, activeFasting, fastingPlan, todayNutrition, latestWeight, refreshAll, loading } = useAppData();
+  const { goal, activeFasting, fastingPlan, todayNutrition, latestWeight, userProfile, refreshAll, loading } = useAppData();
   const [refreshing, setRefreshing] = React.useState(false);
   const [now, setNow] = React.useState(Date.now());
 
@@ -50,9 +51,23 @@ export default function HomeScreen({ navigation }: any) {
     fastingEndTime = formatTime(activeFasting.startTime + totalSeconds * 1000);
   }
 
-  const bmi = currentWeight && goal 
-    ? (currentWeight / Math.pow((170) / 100, 2)).toFixed(1)
+  // BMI 计算 - 使用实际身高
+  const heightInMeters = (userProfile?.height || 170) / 100;
+  const bmi = currentWeight && heightInMeters
+    ? (currentWeight / Math.pow(heightInMeters, 2)).toFixed(1)
     : '--';
+
+  // BMI 状态判断
+  const getBMIStatus = () => {
+    const bmiNum = parseFloat(bmi as string);
+    if (isNaN(bmiNum)) return { text: '--', color: colors.textSecondary };
+    if (bmiNum < 18.5) return { text: '偏瘦', color: colors.info };
+    if (bmiNum < 24) return { text: '正常', color: colors.success };
+    if (bmiNum < 28) return { text: '超重', color: colors.warning };
+    return { text: '肥胖', color: colors.danger };
+  };
+
+  const bmiStatus = getBMIStatus();
 
   return (
     <ScrollView
@@ -63,12 +78,20 @@ export default function HomeScreen({ navigation }: any) {
       <View style={styles.header}>
         <View>
           <Text style={[styles.greeting, { color: colors.text }]}>你好呀 👋</Text>
-          <Text style={[styles.date, { color: colors.textSecondary }]}>
-            {getTodayDateString()} · BMI {bmi}
-          </Text>
+          <View style={styles.bmiRow}>
+            <Text style={[styles.date, { color: colors.textSecondary }]}>
+              {getTodayDateString()}
+            </Text>
+            <Text style={[styles.bmiText, { color: colors.textSecondary }]}>
+              · BMI {bmi}
+            </Text>
+            <Text style={[styles.bmiStatusBadge, { color: bmiStatus.color }]}>
+              {bmiStatus.text}
+            </Text>
+          </View>
         </View>
         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>轻</Text>
+          <Text style={styles.avatarText}>{userProfile?.nickname ? userProfile.nickname[0] : '轻'}</Text>
         </View>
       </View>
 
@@ -152,25 +175,12 @@ export default function HomeScreen({ navigation }: any) {
         <View style={{ marginTop: spacing.sm }}>
           <ProgressBar progress={calorieProgress} />
         </View>
-        <View style={styles.macroRow}>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroDot, { backgroundColor: colors.primary }]} />
-            <Text style={[styles.macroText, { color: colors.textSecondary }]}>
-              蛋白 {todayNutrition.protein.toFixed(0)}g
-            </Text>
-          </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroDot, { backgroundColor: colors.secondary }]} />
-            <Text style={[styles.macroText, { color: colors.textSecondary }]}>
-              碳水 {todayNutrition.carbs.toFixed(0)}g
-            </Text>
-          </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroDot, { backgroundColor: colors.accent }]} />
-            <Text style={[styles.macroText, { color: colors.textSecondary }]}>
-              脂肪 {todayNutrition.fat.toFixed(0)}g
-            </Text>
-          </View>
+        <View style={{ marginTop: spacing.md }}>
+          <NutritionPieChart
+            protein={todayNutrition.protein}
+            carbs={todayNutrition.carbs}
+            fat={todayNutrition.fat}
+          />
         </View>
         <Button
           title="记录饮食"
@@ -205,7 +215,20 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: fontSize.sm,
+  },
+  bmiRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: spacing.xs,
+  },
+  bmiText: {
+    fontSize: fontSize.sm,
+    marginLeft: spacing.xs,
+  },
+  bmiStatusBadge: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeights.bold,
+    marginLeft: spacing.sm,
   },
   avatar: {
     width: 48,

@@ -1,18 +1,19 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, TextInput, Alert, Share, Platform } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
 import { useAppData } from '../hooks/useAppData';
 import { spacing, fontSize, fontWeights, borderRadius } from '../theme';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { updateUserProfile, updateGoals, updateAppSettings, getStreak } from '../db';
+import { updateUserProfile, updateGoals, updateAppSettings, getStreak, getWeightRecords, getMealRecords, getCheckInRecords } from '../db';
 import { ThemeType, WeightUnit, HeightUnit } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const { colors, theme, setTheme, isDark } = useTheme();
   const { userProfile, goal, settings, refreshAll, latestWeight } = useAppData();
   const [streak, setStreak] = useState(0);
+  const [totalRecords, setTotalRecords] = useState(0);
   const [showGoalModal, setShowGoalModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [goalInput, setGoalInput] = useState({
@@ -37,6 +38,9 @@ export default function ProfileScreen() {
   const loadStreak = async () => {
     const s = await getStreak();
     setStreak(s);
+    const checkInRecords = await getCheckInRecords();
+    const validRecords = checkInRecords.filter(r => r.hasWeightRecord || r.hasMealRecord || r.fastingCompleted);
+    setTotalRecords(validRecords.length);
   };
 
   const handleThemeChange = async (newTheme: ThemeType) => {
@@ -97,8 +101,46 @@ export default function ProfileScreen() {
     setShowProfileModal(false);
   };
 
-  const handleExportCSV = () => {
-    Alert.alert('提示', 'CSV导出功能开发中...');
+  const handleExportCSV = async () => {
+    try {
+      const weightRecords = await getWeightRecords();
+      const mealRecords = await getMealRecords();
+
+      // 生成体重 CSV
+      let weightCSV = '日期,体重(kg),备注\n';
+      weightRecords.forEach(r => {
+        weightCSV += `${r.date},${r.weight.toFixed(1)},${r.note || ''}\n`;
+      });
+
+      // 生成饮食 CSV
+      let mealCSV = '日期,餐次,食物,份量(g),热量(kcal),蛋白质(g),碳水(g),脂肪(g)\n';
+      mealRecords.forEach(r => {
+        mealCSV += `${r.date},${r.mealType},${r.foodName},${r.quantity},${r.calories.toFixed(0)},${r.protein.toFixed(1)},${r.carbs.toFixed(1)},${r.fat.toFixed(1)}\n`;
+      });
+
+      const fullCSV = `=== 体重记录 ===\n${weightCSV}\n=== 饮食记录 ===\n${mealCSV}`;
+
+      // 使用 Share 分享
+      if (Platform.OS === 'web') {
+        // Web 平台：下载文件
+        const blob = new Blob([fullCSV], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `轻瘦数据导出_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        Alert.alert('成功', '数据已导出');
+      } else {
+        // 移动平台：使用 Share
+        await Share.share({
+          message: fullCSV,
+          title: '轻瘦数据导出',
+        });
+      }
+    } catch (e) {
+      Alert.alert('错误', '导出失败，请重试');
+    }
   };
 
   const themeOptions: { key: ThemeType; label: string }[] = [
@@ -111,8 +153,6 @@ export default function ProfileScreen() {
     { key: 'kg', label: '公斤 (kg)' },
     { key: 'jin', label: '斤' },
   ];
-
-  const totalRecords = 0;
 
   return (
     <ScrollView
@@ -163,7 +203,10 @@ export default function ProfileScreen() {
           <Text style={{ color: colors.textTertiary }}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}>
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('CheckInCalendar')}
+        >
           <View style={styles.menuLeft}>
             <Text style={styles.menuIcon}>📅</Text>
             <Text style={[styles.menuText, { color: colors.text }]}>打卡日历</Text>
@@ -171,7 +214,10 @@ export default function ProfileScreen() {
           <Text style={{ color: colors.textTertiary }}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}>
+        <TouchableOpacity
+          style={[styles.menuItem, { borderBottomColor: colors.borderLight }]}
+          onPress={() => navigation.navigate('Recipe')}
+        >
           <View style={styles.menuLeft}>
             <Text style={styles.menuIcon}>📖</Text>
             <Text style={[styles.menuText, { color: colors.text }]}>轻断食食谱</Text>
