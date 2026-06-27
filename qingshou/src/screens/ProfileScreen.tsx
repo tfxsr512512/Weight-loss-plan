@@ -6,7 +6,7 @@ import { spacing, fontSize, fontWeights, borderRadius } from '../theme';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { updateUserProfile, updateGoals, updateAppSettings, getStreak, getWeightRecords, getMealRecords, getCheckInRecords } from '../db';
-import { ThemeType, WeightUnit, HeightUnit } from '../types';
+import { ThemeType, WeightUnit, HeightUnit, WeightRecord, MealRecord } from '../types';
 import { useFocusEffect } from '@react-navigation/native';
 
 export default function ProfileScreen({ navigation }: any) {
@@ -108,13 +108,13 @@ export default function ProfileScreen({ navigation }: any) {
 
       // 生成体重 CSV
       let weightCSV = '日期,体重(kg),备注\n';
-      weightRecords.forEach(r => {
+      (weightRecords as WeightRecord[]).forEach(r => {
         weightCSV += `${r.date},${r.weight.toFixed(1)},${r.note || ''}\n`;
       });
 
       // 生成饮食 CSV
       let mealCSV = '日期,餐次,食物,份量(g),热量(kcal),蛋白质(g),碳水(g),脂肪(g)\n';
-      mealRecords.forEach(r => {
+      (mealRecords as MealRecord[]).forEach(r => {
         mealCSV += `${r.date},${r.mealType},${r.foodName},${r.quantity},${r.calories.toFixed(0)},${r.protein.toFixed(1)},${r.carbs.toFixed(1)},${r.fat.toFixed(1)}\n`;
       });
 

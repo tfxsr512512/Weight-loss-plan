@@ -180,6 +180,9 @@ export const addMealRecord = async (
   await saveMealRecords();
   await updateCheckInRecord(date, { hasMealRecord: true });
 };
+export const getMealRecords = async (): Promise<MealRecord[]> => {
+  return [...memoryDB.mealRecords].sort((a, b) => b.createdAt - a.createdAt);
+};
 export const getMealRecordsByDate = async (date: string): Promise<MealRecord[]> => {
   return memoryDB.mealRecords.filter(r => r.date === date).sort((a, b) => b.createdAt - a.createdAt);
 };
