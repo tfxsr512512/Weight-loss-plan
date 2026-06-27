@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "qingshou",
+    "name": "轻瘦",
     "slug": "qingshou",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,9 +8,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundler": "metro"
+      "bundler": "metro",
+      "bundleIdentifier": "com.qingshou.app"
     },
     "android": {
+      "package": "com.qingshou.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
